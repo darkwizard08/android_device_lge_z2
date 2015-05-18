@@ -1,0 +1,44 @@
+on init
+    wait /dev/block/bootdevice/by-name/carrier
+    exec /sbin/setup_fs_static /dev/block/bootdevice/by-name/carrier no_reboot
+
+    export REMOVABLE_STORAGE_PATH /storage/external_SD
+
+on fs
+    mkdir /carrier 0771 system lg_fota
+    wait /dev/block/bootdevice/by-name/carrier
+    exec /system/bin/e2fsck -y /dev/block/bootdevice/by-name/carrier
+    mount ext4 /dev/block/bootdevice/by-name/carrier /carrier nosuid nodev barrier=1 noatime noauto_da_alloc errors=continue
+
+on post-fs-data
+    chown system lg_fota /carrier
+    chmod 0771 /carrier
+    restorecon /carrier
+
+# ITSON_L_PATCHES
+    mkdir /dev/socket/itson 02771 itson itson
+    mkdir /data/itson 02770 itson itson
+    start itsonbs
+
+# 2014-11-10 hyukbin.ko@lge.com LGP_DATA_APN_BACKUP_SPRINT [START]
+    mkdir /persist-lg/lgdata 0771 radio radio
+# 2014-11-10 hyukbin.ko@lge.com LGP_DATA_APN_BACKUP_SPRINT [END]
+
+#20150123 performace tuning
+    write /proc/sys/net/ipv4/tcp_adv_win_scale 1
+
+# [LGE_VPN][encryption-vpn@lge.com] Inside Secure VPN Kernel Module install [START]
+service vpnclientpm /system/bin/vpnclientpm3 \
+    -O /data/data/com.ipsec.service/vpnclientpm.txt \
+    -U rmnet0,rmnet_data0,rmnet_usb0,wlan0,bt-pan,rndis0,p2p0,eth0
+     socket vpnclientpm seqpacket 0666
+# uid dropped to system when capabilities are set
+    class main
+    group system net_admin net_raw
+    disabled
+# [LGE_VPN][encryption-vpn@lge.com] Inside Secure VPN Service & modules permission change [END]
+
+# ITSON_L_PATCHES
+service itsonbs /system/vendor/itson/itson-bootstrapper.sh
+    oneshot
+    critical
