@@ -16,7 +16,8 @@ endif
 
 PRODUCT_COPY_FILES += \
     $(LOCAL_KERNEL):kernel \
-    device/lge/z2/twrp.fstab:recovery/root/etc/twrp.fstab
+    device/lge/z2/twrp.fstab:recovery/root/etc/twrp.fstab \
+    device/lge/z2/dt.img:dt.img
 
 $(call inherit-product, build/target/product/full.mk)
 
